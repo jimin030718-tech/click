@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { NewDesignPage } from "@/screens/NewDesignPage"
+import { NewDesignPage } from "@/components/screens/NewDesignPage"
 
 export default function NewDesignRoute() {
   const router = useRouter()

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { GuidePage } from "@/screens/GuidePage"
+import { GuidePage } from "@/components/screens/GuidePage"
 
 export default function GuideRoute() {
   const router = useRouter()

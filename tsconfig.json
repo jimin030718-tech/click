@@ -13,7 +13,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": [
-        "./src/*"
+        "./*"
       ]
     },
     "resolveJsonModule": true,
@@ -33,15 +33,16 @@
   "include": [
     "next-env.d.ts",
     "app",
-    "src",
+    "components",
+    "lib",
+    "state",
+    "types",
+    "templates",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "legacy",
-    "vite.config.ts",
-    "src/main.tsx",
-    "src/vite-env.d.ts"
+    "legacy"
   ]
 }

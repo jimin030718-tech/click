@@ -3,7 +3,7 @@
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useAppState } from "../../state/AppState"
+import { useAppState } from "@/state/AppState"
 
 type MenuPath = "/" | "/saved" | "/guide" | "/new"
 
@@ -22,8 +22,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [floatingUiOpen, setFloatingUiOpen] = useState(false)
 
-  // 편집기(/design/...)에 있으면, 편집기를 열기 전 화면을 기준으로 메뉴를 표시합니다.
-  const isEditing = pathname.startsWith("/design/")
+  // 디자인 만들기(/create/...)에 있으면, 편집기를 열기 전 화면을 기준으로 메뉴를 표시합니다.
+  const isEditing = pathname.startsWith("/create/")
   const basePath = isEditing ? editorReturnTo : pathname
 
   useEffect(() => {

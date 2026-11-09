@@ -1,6 +1,6 @@
 import { type CSSProperties, type FormEvent, type PointerEvent as ReactPointerEvent } from "react"
-import { posterContent, type LayoutKind } from "../data/posters"
-import { fontCombinations, type TextElement, type TextObjectStyle } from "../data/styles"
+import { posterContent, type LayoutKind } from "@/lib/posters"
+import { fontCombinations, type TextElement, type TextObjectStyle } from "@/lib/styles"
 
 export function PosterArtwork({
   type,

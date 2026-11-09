@@ -2,8 +2,8 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { posters } from "@/data/posters"
-import { SavedDesignsPage } from "@/screens/SavedPage"
+import { posters } from "@/lib/posters"
+import { SavedDesignsPage } from "@/components/screens/SavedPage"
 import { useAppState } from "@/state/AppState"
 
 export default function SavedRoute() {
@@ -33,7 +33,7 @@ export default function SavedRoute() {
       savedIds={savedIds}
       onSelect={(id) => {
         setEditorReturnTo("/saved")
-        router.push(`/design/${id}`, { scroll: false })
+        router.push(`/create/${id}`, { scroll: false })
       }}
       onToggleSaved={toggleSaved}
       onBrowse={() => router.push("/", { scroll: false })}

@@ -18,23 +18,29 @@ Claude Code가 작업을 시작할 때마다 자동으로 읽는 프로젝트 �
 - 실행: `npm run dev` → http://localhost:3000
 - 확인: `npm run build` (수정 후 에러가 없는지 반드시 확인)
 
-## 파일 구조
-### 루트 app/ (주소 = 폴더)
+## 파일 구조 (src/ 없이 루트에 바로, import는 `@/폴더/파일`)
+### app/ (주소 = 폴더)
 - `app/layout.tsx` — 모든 페이지 공통(메타 정보 + 상단 메뉴·푸터·맨 위로 버튼), `app/globals.css` — 전체 스타일(웹폰트 @import 맨 위)
 - `app/page.tsx` — 홈 `/` (카테고리 탭 + 템플릿 카드)
-- `app/saved/` `/saved` 찜한 템플릿, `app/guide/` `/guide` 이용 안내, `app/new/` `/new` 새 디자인, `app/design/[id]/` `/design/템플릿id` 편집기(2~5단계)
+- `app/saved/` `/saved` 찜한 템플릿, `app/guide/` `/guide` 이용 안내, `app/new/` `/new` 새 디자인
+- `app/create/[templateId]/` `/create/템플릿id` 디자인 만들기(2~5단계, 한 페이지 안에서 단계 이동)
+- `app/api/` — (비어 있음) 서버 API 자리
 
-### src/
-- `components/layout/AppShell.tsx` — 상단 메뉴, 모바일 메뉴, 푸터, 맨 위로 가기, '편집 화면을 떠날까요?' 창
-- `state/AppState.tsx` — 여러 화면이 같이 쓰는 값(찜 목록, 홈 카테고리, 편집기에서 돌아갈 주소)
-- `screens/EditorScreen.tsx` — 편집기 주소와 DesignFlow를 연결
-- `screens/DesignFlow.tsx` — 디자인 만들기 2~5단계 전체(정보 입력, 분위기, 편집기, 내보내기)
-- `screens/SavedPage.tsx` — 찜한 템플릿 / `screens/GuidePage.tsx` — 이용 안내 / `screens/NewDesignPage.tsx` — 새 디자인(크기 선택)
-- `components/PosterArtwork.tsx` — 포스터 그리기(사진·글자·로고, 편집기에서 글자 직접 수정·끌기)
-- `components/ui/` — 여러 곳에서 쓰는 조각: `TemplateCard.tsx`, `UploadField.tsx`, `WorkflowSteps.tsx`
-- `data/posters.ts` — 카테고리, 템플릿 20종, 예시 문구, 카테고리별 질문
-- `data/styles.ts` — 폰트 조합, 분위기 7종과 색 조합
-- `screens/`는 원래 `pages/`였는데, Next.js 예약 폴더명과 겹쳐서 이름을 바꿈
+### components/
+- `create/` — 디자인 만들기 흐름
+  - `DesignFlow.tsx` 단계 고르기 / `useDesignFlow.tsx` 2~5단계가 함께 쓰는 상태(입력·사진·로고·글자 위치·되돌리기 기록) / `CreateScreen.tsx` 주소와 연결
+  - `InfoStep.tsx` 2단계 정보 입력 / `MoodStep.tsx` 3단계 분위기
+  - 단계 화면은 `<InfoStep />`이 아니라 `renderInfoStep(flow)`처럼 **함수로 호출**합니다(단계를 넘길 때 화면이 예전과 똑같이 이어지도록).
+- `editor/` — `PosterArtwork.tsx` 포스터 그리기(글자 직접 수정·끌기) / `EditorStep.tsx` 4단계 편집 / `ExportStep.tsx` 5단계 내보내기
+- `layout/AppShell.tsx` — 상단 메뉴, 모바일 메뉴, 푸터, 맨 위로 가기, '편집 화면을 떠날까요?' 창
+- `ui/` — 여러 곳에서 쓰는 조각: `TemplateCard.tsx`, `UploadField.tsx`, `WorkflowSteps.tsx`
+- `screens/` — `SavedPage.tsx` 찜한 템플릿 / `GuidePage.tsx` 이용 안내 / `NewDesignPage.tsx` 새 디자인(크기 선택)
+
+### 그 밖
+- `lib/posters.ts` — 카테고리, 템플릿 20종, 예시 문구, 카테고리별 질문 / `lib/styles.ts` — 폰트 조합, 분위기 7종과 색 조합
+- `lib/ai/`, `lib/db/`, `templates/` — (비어 있음) AI 호출, DB, 템플릿 자리
+- `types/poster.ts` — 팀 가이드의 Poster 데이터 모양 (아직 화면과 연결 안 됨)
+- `state/AppState.tsx` — 여러 화면이 같이 쓰는 값(찜 목록, 홈 카테고리, 디자인 만들기에서 돌아갈 주소)
 - 루트의 `legacy/` — 예전 VS Code 버전(캔버스 렌더러, 스마트 가이드 PosterEditor 등). 빌드에 포함되지 않음. 스마트 가이드를 옮겨올 때 참고.
 
 ## 규칙

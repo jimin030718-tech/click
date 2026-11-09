@@ -1,5 +1,5 @@
-import { type Poster } from "../../data/posters"
-import { PosterArtwork } from "../PosterArtwork"
+import { type Poster } from "@/lib/posters"
+import { PosterArtwork } from "@/components/editor/PosterArtwork"
 
 export function TemplateCard({
   poster,

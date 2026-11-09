@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { categories, posters } from "@/data/posters"
+import { categories, posters } from "@/lib/posters"
 import { TemplateCard } from "@/components/ui/TemplateCard"
 import { useAppState } from "@/state/AppState"
 
@@ -21,7 +21,7 @@ export default function HomePage() {
 
   const openEditor = (id: string) => {
     setEditorReturnTo("/")
-    router.push(`/design/${id}`, { scroll: false })
+    router.push(`/create/${id}`, { scroll: false })
   }
 
   return (
