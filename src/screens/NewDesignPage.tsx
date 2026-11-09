@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react"
 
 export function NewDesignPage({ onBrowse }: { onBrowse: () => void }) {

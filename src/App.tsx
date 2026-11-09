@@ -1,10 +1,12 @@
+"use client"
+
 import { useEffect, useState } from "react"
 import { categories, posters, type Page } from "./data/posters"
-import { UploadPage } from "./pages/DesignFlow"
+import { UploadPage } from "./screens/DesignFlow"
 import { TemplateCard } from "./components/TemplateCard"
-import { SavedDesignsPage } from "./pages/SavedPage"
-import { GuidePage } from "./pages/GuidePage"
-import { NewDesignPage } from "./pages/NewDesignPage"
+import { SavedDesignsPage } from "./screens/SavedPage"
+import { GuidePage } from "./screens/GuidePage"
+import { NewDesignPage } from "./screens/NewDesignPage"
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("전체")

@@ -19,3 +19,8 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts

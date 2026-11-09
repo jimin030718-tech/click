@@ -1,3 +1,5 @@
+"use client"
+
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react"
 import { posterContent, questionsByCategory, type Poster } from "../data/posters"
 import { defaultTextStyle, fontCombinations, moodPresets, adjustHexBrightness, type TextElement, type TextObjectStyle } from "../data/styles"

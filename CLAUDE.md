@@ -14,19 +14,20 @@ Claude Code가 작업을 시작할 때마다 자동으로 읽는 프로젝트 �
 - 화면 디자인 원본은 팀의 Figma Make 파일(2026-11-03 최종본)입니다. 이후 화면 수정은 이 프로젝트에서 합니다. 디자인팀 의견은 캡처 + 한 줄로 받아 반영합니다.
 
 ## 기술
-- React 19 + Vite + TypeScript + Tailwind 4
+- Next.js 16 (App Router, webpack 모드) + React 19 + TypeScript + Tailwind 4 (@tailwindcss/postcss)
 - 실행: `npm run dev` → http://localhost:8443
 - 확인: `npm run build` (수정 후 에러가 없는지 반드시 확인)
 
 ## 파일 구조 (src/)
+- (루트) `app/layout.tsx` — html/메타 정보, `app/globals.css` — 전체 스타일(웹폰트 @import 맨 위), `app/page.tsx` → `app/ClientApp.tsx`가 `src/App.tsx`를 브라우저에서만 그림
 - `App.tsx` — 상단 메뉴, 페이지 이동, 홈(템플릿 목록), 맨 위로 가기 버튼
-- `pages/DesignFlow.tsx` — 디자인 만들기 2~5단계 전체(정보 입력, 분위기, 편집기, 내보내기)
-- `pages/SavedPage.tsx` — 찜한 템플릿 / `pages/GuidePage.tsx` — 이용 안내 / `pages/NewDesignPage.tsx` — 새 디자인(크기 선택)
+- `screens/DesignFlow.tsx` — 디자인 만들기 2~5단계 전체(정보 입력, 분위기, 편집기, 내보내기)
+- `screens/SavedPage.tsx` — 찜한 템플릿 / `screens/GuidePage.tsx` — 이용 안내 / `screens/NewDesignPage.tsx` — 새 디자인(크기 선택)
 - `components/PosterArtwork.tsx` — 포스터 그리기(사진·글자·로고, 편집기에서 글자 직접 수정·끌기)
 - `components/TemplateCard.tsx`, `components/UploadField.tsx`, `components/WorkflowSteps.tsx`
 - `data/posters.ts` — 카테고리, 템플릿 20종, 예시 문구, 카테고리별 질문
 - `data/styles.ts` — 폰트 조합, 분위기 7종과 색 조합
-- `index.css` — 전체 스타일
+- `screens/`는 원래 `pages/`였는데, Next.js 예약 폴더명과 겹쳐서 이름을 바꿈
 - 루트의 `legacy/` — 예전 VS Code 버전(캔버스 렌더러, 스마트 가이드 PosterEditor 등). 빌드에 포함되지 않음. 스마트 가이드를 옮겨올 때 참고.
 
 ## 규칙
