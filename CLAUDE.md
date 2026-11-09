@@ -15,7 +15,7 @@ Claude Code가 작업을 시작할 때마다 자동으로 읽는 프로젝트 �
 
 ## 기술
 - Next.js 16 (App Router, webpack 모드) + React 19 + TypeScript + Tailwind 4 (@tailwindcss/postcss)
-- 실행: `npm run dev` → http://localhost:8443
+- 실행: `npm run dev` → http://localhost:3000
 - 확인: `npm run build` (수정 후 에러가 없는지 반드시 확인)
 
 ## 파일 구조 (src/)
