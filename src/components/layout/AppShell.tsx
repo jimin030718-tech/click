@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react"
+import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAppState } from "../../state/AppState"
 
@@ -63,24 +64,31 @@ export default function AppShell({ children }: { children: ReactNode }) {
     setMobileMenuOpen(false)
   }
 
-  const requestNavigation = (nextPath: MenuPath) => {
+  // 메뉴 링크를 눌렀을 때: 디자인 작업 중이면 이동을 멈추고 '나갈까요?' 창을 띄웁니다.
+  const onMenuClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    nextPath: MenuPath,
+  ) => {
     setMobileMenuOpen(false)
     if (isEditing) {
+      event.preventDefault()
       setPendingPath(nextPath)
       setShowHomeDialog(true)
       return
     }
-    navigate(nextPath)
+    // 이동은 Link가 합니다. 찜 화면에 새로 들어갈 때만 목록을 찍어 둡니다.
+    if (nextPath === "/saved" && basePath !== "/saved") snapshotSavedView()
   }
 
-  const requestHome = () => {
+  const onLogoClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    setMobileMenuOpen(false)
     if (isEditing) {
+      event.preventDefault()
       setPendingPath("/")
-      setMobileMenuOpen(false)
       setShowHomeDialog(true)
       return
     }
-    goHome()
+    setActiveCategory("전체")
     window.requestAnimationFrame(() =>
       window.scrollTo({ top: 0, behavior: "smooth" }),
     )
@@ -111,36 +119,47 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <button
+        <Link
+          href="/"
+          scroll={false}
           className="brand"
           aria-label="CLICK 홈"
-          onClick={requestHome}
+          onClick={onLogoClick}
         >
           <img className="brand-mark" src="/assets/click-logo.png" alt="" />
           <span className="brand-name">CLICK</span>
-        </button>
+        </Link>
         <nav className="navigation" aria-label="주요 메뉴">
-          <button
+          <Link
+            href="/"
+            scroll={false}
             className={pathname === "/" ? "current" : ""}
-            onClick={() => requestNavigation("/")}
+            aria-current={pathname === "/" ? "page" : undefined}
+            onClick={(event) => onMenuClick(event, "/")}
           >
             템플릿
-          </button>
-          <button
+          </Link>
+          <Link
+            href="/saved"
+            scroll={false}
             className={basePath === "/saved" ? "current" : ""}
-            onClick={() => requestNavigation("/saved")}
+            aria-current={basePath === "/saved" ? "page" : undefined}
+            onClick={(event) => onMenuClick(event, "/saved")}
           >
             찜한 템플릿
             {savedIds.size > 0 && (
               <span className="saved-count">{savedIds.size}</span>
             )}
-          </button>
-          <button
+          </Link>
+          <Link
+            href="/guide"
+            scroll={false}
             className={basePath === "/guide" ? "current" : ""}
-            onClick={() => requestNavigation("/guide")}
+            aria-current={basePath === "/guide" ? "page" : undefined}
+            onClick={(event) => onMenuClick(event, "/guide")}
           >
             이용 안내
-          </button>
+          </Link>
           <button
             type="button"
             className={`mobile-menu-trigger ${mobileMenuOpen ? "open" : ""}`}
@@ -152,13 +171,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <span />
             <span />
           </button>
-          <button
+          <Link
+            href="/new"
+            scroll={false}
             className="create-button"
-            onClick={() => requestNavigation("/new")}
+            onClick={(event) => onMenuClick(event, "/new")}
           >
             <span>새 디자인 만들기</span>
             <span aria-hidden="true">＋</span>
-          </button>
+          </Link>
           {mobileMenuOpen && (
             <>
               <button
@@ -168,34 +189,46 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 onClick={() => setMobileMenuOpen(false)}
               />
               <div className="mobile-menu" aria-label="모바일 메뉴">
-                <button
+                <Link
+                  href="/"
+                  scroll={false}
                   className={pathname === "/" ? "current" : ""}
-                  onClick={() => requestNavigation("/")}
+                  aria-current={pathname === "/" ? "page" : undefined}
+                  onClick={(event) => onMenuClick(event, "/")}
                 >
                   <span>템플릿</span>
                   <span aria-hidden="true">→</span>
-                </button>
-                <button
+                </Link>
+                <Link
+                  href="/saved"
+                  scroll={false}
                   className={basePath === "/saved" ? "current" : ""}
-                  onClick={() => requestNavigation("/saved")}
+                  aria-current={basePath === "/saved" ? "page" : undefined}
+                  onClick={(event) => onMenuClick(event, "/saved")}
                 >
                   <span>찜한 템플릿</span>
                   <span>{savedIds.size > 0 ? savedIds.size : "→"}</span>
-                </button>
-                <button
+                </Link>
+                <Link
+                  href="/guide"
+                  scroll={false}
                   className={basePath === "/guide" ? "current" : ""}
-                  onClick={() => requestNavigation("/guide")}
+                  aria-current={basePath === "/guide" ? "page" : undefined}
+                  onClick={(event) => onMenuClick(event, "/guide")}
                 >
                   <span>이용 안내</span>
                   <span aria-hidden="true">→</span>
-                </button>
-                <button
+                </Link>
+                <Link
+                  href="/new"
+                  scroll={false}
                   className={basePath === "/new" ? "current" : ""}
-                  onClick={() => requestNavigation("/new")}
+                  aria-current={basePath === "/new" ? "page" : undefined}
+                  onClick={(event) => onMenuClick(event, "/new")}
                 >
                   <span>새 디자인 만들기</span>
                   <span aria-hidden="true">＋</span>
-                </button>
+                </Link>
               </div>
             </>
           )}

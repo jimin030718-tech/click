@@ -75,9 +75,17 @@ button {
   font: inherit;
 }
 
-button:focus-visible {
+button:focus-visible,
+a:focus-visible {
   outline: 3px solid rgba(66, 75, 84, 0.34);
   outline-offset: 4px;
+}
+
+/* 메뉴·로고 링크(Link)를 예전 버튼과 똑같이 보이게 */
+a.brand,
+.navigation a {
+  color: inherit;
+  text-decoration: none;
 }
 
 .app-shell {
@@ -97,6 +105,7 @@ button:focus-visible {
 
 .brand,
 .navigation button,
+.navigation a,
 .category-tabs button,
 .poster-button,
 .save-button {
@@ -135,7 +144,7 @@ button:focus-visible {
 }
 
 .navigation
-  > button:not(.create-button):not(.mobile-menu-trigger):not(
+  > :is(button, a):not(.create-button):not(.mobile-menu-trigger):not(
     .mobile-menu-backdrop
   ) {
   padding: 10px 15px;
@@ -147,7 +156,7 @@ button:focus-visible {
 }
 
 .navigation
-  > button:not(.create-button):not(.mobile-menu-trigger):not(
+  > :is(button, a):not(.create-button):not(.mobile-menu-trigger):not(
     .mobile-menu-backdrop
   ):hover {
   color: var(--ink);
@@ -155,7 +164,7 @@ button:focus-visible {
 }
 
 .navigation
-  > button.current:not(.create-button):not(.mobile-menu-trigger):not(
+  > :is(button, a).current:not(.create-button):not(.mobile-menu-trigger):not(
     .mobile-menu-backdrop
   ) {
   background: var(--lime);
@@ -165,7 +174,7 @@ button:focus-visible {
 }
 
 .navigation
-  > button.current:not(.create-button):not(.mobile-menu-trigger):not(
+  > :is(button, a).current:not(.create-button):not(.mobile-menu-trigger):not(
     .mobile-menu-backdrop
   ):hover {
   background: var(--lime);
@@ -2201,7 +2210,7 @@ body:has(.generation-overlay, .dialog-backdrop, .mobile-menu)
 
 @media (max-width: 900px) {
   .navigation
-    > button:not(.create-button):not(.mobile-menu-trigger):not(
+    > :is(button, a):not(.create-button):not(.mobile-menu-trigger):not(
       .mobile-menu-backdrop
     ) {
     display: none;
@@ -2287,7 +2296,7 @@ body:has(.generation-overlay, .dialog-backdrop, .mobile-menu)
     transform-origin: top right;
   }
 
-  .mobile-menu button {
+  .mobile-menu :is(button, a) {
     width: 100%;
     display: flex;
     align-items: center;
@@ -2300,16 +2309,16 @@ body:has(.generation-overlay, .dialog-backdrop, .mobile-menu)
     text-align: left;
   }
 
-  .mobile-menu button:hover {
+  .mobile-menu :is(button, a):hover {
     background: rgba(66, 75, 84, 0.08);
   }
 
-  .mobile-menu button.current {
+  .mobile-menu :is(button, a).current {
     background: var(--lime);
     color: white;
   }
 
-  .mobile-menu button > span:last-child {
+  .mobile-menu :is(button, a) > span:last-child {
     font-size: 12px;
   }
 
