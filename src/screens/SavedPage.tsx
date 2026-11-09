@@ -1,5 +1,5 @@
 import { type Poster } from "../data/posters"
-import { TemplateCard } from "../components/TemplateCard"
+import { TemplateCard } from "../components/ui/TemplateCard"
 
 export function SavedDesignsPage({
   savedPosters,

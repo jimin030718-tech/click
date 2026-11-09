@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import AppShell from "@/components/layout/AppShell"
+import { AppStateProvider } from "@/state/AppState"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -20,7 +22,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AppStateProvider>
+          <AppShell>{children}</AppShell>
+        </AppStateProvider>
+      </body>
     </html>
   )
 }

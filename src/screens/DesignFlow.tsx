@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type
 import { posterContent, questionsByCategory, type Poster } from "../data/posters"
 import { defaultTextStyle, fontCombinations, moodPresets, adjustHexBrightness, type TextElement, type TextObjectStyle } from "../data/styles"
 import { PosterArtwork } from "../components/PosterArtwork"
-import { UploadField } from "../components/UploadField"
-import { WorkflowSteps } from "../components/WorkflowSteps"
+import { UploadField } from "../components/ui/UploadField"
+import { WorkflowSteps } from "../components/ui/WorkflowSteps"
 
 export type PosterForm = {
   eyebrow: string

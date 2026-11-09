@@ -1,50 +1,29 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { categories, posters, type Page } from "./data/posters"
-import { UploadPage } from "./screens/DesignFlow"
-import { TemplateCard } from "./components/TemplateCard"
-import { SavedDesignsPage } from "./screens/SavedPage"
-import { GuidePage } from "./screens/GuidePage"
-import { NewDesignPage } from "./screens/NewDesignPage"
+import { useEffect, useState, type ReactNode } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { useAppState } from "../../state/AppState"
 
-export default function App() {
-  const [activeCategory, setActiveCategory] = useState("전체")
-  const [selectedPosterId, setSelectedPosterId] = useState("")
-  const [page, setPage] = useState<Page>("home")
-  const [savedIds, setSavedIds] = useState<Set<string>>(() => {
-    try {
-      const saved = window.localStorage.getItem("click-favorite-templates")
-      return new Set(saved ? (JSON.parse(saved) as string[]) : [])
-    } catch {
-      return new Set()
-    }
-  })
-  const [savedViewIds, setSavedViewIds] = useState<Set<string>>(
-    () => new Set(),
-  )
+type MenuPath = "/" | "/saved" | "/guide" | "/new"
+
+export default function AppShell({ children }: { children: ReactNode }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const {
+    savedIds,
+    snapshotSavedView,
+    setActiveCategory,
+    editorReturnTo,
+  } = useAppState()
   const [showHomeDialog, setShowHomeDialog] = useState(false)
-  const [pendingPage, setPendingPage] = useState<Page>("home")
+  const [pendingPath, setPendingPath] = useState<MenuPath>("/")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [floatingUiOpen, setFloatingUiOpen] = useState(false)
-  const filteredPosters =
-    activeCategory === "전체"
-      ? posters
-      : posters.filter((poster) => poster.category === activeCategory)
-  const selectedPoster = posters.find(
-    (poster) => poster.id === selectedPosterId,
-  )
-  const savedPosters = posters.filter((poster) =>
-    (page === "saved" ? savedViewIds : savedIds).has(poster.id),
-  )
 
-  useEffect(() => {
-    window.localStorage.setItem(
-      "click-favorite-templates",
-      JSON.stringify([...savedIds]),
-    )
-  }, [savedIds])
+  // 편집기(/design/...)에 있으면, 편집기를 열기 전 화면을 기준으로 메뉴를 표시합니다.
+  const isEditing = pathname.startsWith("/design/")
+  const basePath = isEditing ? editorReturnTo : pathname
 
   useEffect(() => {
     const updateScrollButton = () => setShowScrollTop(window.scrollY >= 400)
@@ -69,28 +48,34 @@ export default function App() {
     return () => observer.disconnect()
   }, [])
 
-  const navigate = (nextPage: Page) => {
-    if (nextPage === "saved" && page !== "saved") {
-      setSavedViewIds(new Set(savedIds))
+  const navigate = (nextPath: MenuPath) => {
+    if (nextPath === "/saved" && basePath !== "/saved") {
+      snapshotSavedView()
     }
-    setSelectedPosterId("")
-    setPage(nextPage)
+    router.push(nextPath, { scroll: false })
     setMobileMenuOpen(false)
   }
 
-  const requestNavigation = (nextPage: Page) => {
+  const goHome = () => {
+    router.push("/", { scroll: false })
+    setActiveCategory("전체")
+    setShowHomeDialog(false)
     setMobileMenuOpen(false)
-    if (selectedPoster) {
-      setPendingPage(nextPage)
+  }
+
+  const requestNavigation = (nextPath: MenuPath) => {
+    setMobileMenuOpen(false)
+    if (isEditing) {
+      setPendingPath(nextPath)
       setShowHomeDialog(true)
       return
     }
-    navigate(nextPage)
+    navigate(nextPath)
   }
 
   const requestHome = () => {
-    if (selectedPoster) {
-      setPendingPage("home")
+    if (isEditing) {
+      setPendingPath("/")
       setMobileMenuOpen(false)
       setShowHomeDialog(true)
       return
@@ -101,30 +86,13 @@ export default function App() {
     )
   }
 
-  const goHome = () => {
-    setSelectedPosterId("")
-    setPage("home")
-    setActiveCategory("전체")
-    setShowHomeDialog(false)
-    setMobileMenuOpen(false)
-  }
-
   const confirmNavigation = () => {
     setShowHomeDialog(false)
-    if (pendingPage === "home") {
+    if (pendingPath === "/") {
       goHome()
       return
     }
-    navigate(pendingPage)
-  }
-
-  const toggleSaved = (id: string) => {
-    setSavedIds((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+    navigate(pendingPath)
   }
 
   const scrollToTop = () => {
@@ -153,14 +121,14 @@ export default function App() {
         </button>
         <nav className="navigation" aria-label="주요 메뉴">
           <button
-            className={page === "home" && !selectedPoster ? "current" : ""}
-            onClick={() => requestNavigation("home")}
+            className={pathname === "/" ? "current" : ""}
+            onClick={() => requestNavigation("/")}
           >
             템플릿
           </button>
           <button
-            className={page === "saved" ? "current" : ""}
-            onClick={() => requestNavigation("saved")}
+            className={basePath === "/saved" ? "current" : ""}
+            onClick={() => requestNavigation("/saved")}
           >
             찜한 템플릿
             {savedIds.size > 0 && (
@@ -168,8 +136,8 @@ export default function App() {
             )}
           </button>
           <button
-            className={page === "guide" ? "current" : ""}
-            onClick={() => requestNavigation("guide")}
+            className={basePath === "/guide" ? "current" : ""}
+            onClick={() => requestNavigation("/guide")}
           >
             이용 안내
           </button>
@@ -186,7 +154,7 @@ export default function App() {
           </button>
           <button
             className="create-button"
-            onClick={() => requestNavigation("new")}
+            onClick={() => requestNavigation("/new")}
           >
             <span>새 디자인 만들기</span>
             <span aria-hidden="true">＋</span>
@@ -201,31 +169,29 @@ export default function App() {
               />
               <div className="mobile-menu" aria-label="모바일 메뉴">
                 <button
-                  className={
-                    page === "home" && !selectedPoster ? "current" : ""
-                  }
-                  onClick={() => requestNavigation("home")}
+                  className={pathname === "/" ? "current" : ""}
+                  onClick={() => requestNavigation("/")}
                 >
                   <span>템플릿</span>
                   <span aria-hidden="true">→</span>
                 </button>
                 <button
-                  className={page === "saved" ? "current" : ""}
-                  onClick={() => requestNavigation("saved")}
+                  className={basePath === "/saved" ? "current" : ""}
+                  onClick={() => requestNavigation("/saved")}
                 >
                   <span>찜한 템플릿</span>
                   <span>{savedIds.size > 0 ? savedIds.size : "→"}</span>
                 </button>
                 <button
-                  className={page === "guide" ? "current" : ""}
-                  onClick={() => requestNavigation("guide")}
+                  className={basePath === "/guide" ? "current" : ""}
+                  onClick={() => requestNavigation("/guide")}
                 >
                   <span>이용 안내</span>
                   <span aria-hidden="true">→</span>
                 </button>
                 <button
-                  className={page === "new" ? "current" : ""}
-                  onClick={() => requestNavigation("new")}
+                  className={basePath === "/new" ? "current" : ""}
+                  onClick={() => requestNavigation("/new")}
                 >
                   <span>새 디자인 만들기</span>
                   <span aria-hidden="true">＋</span>
@@ -236,76 +202,7 @@ export default function App() {
         </nav>
       </header>
 
-      {selectedPoster ? (
-        <UploadPage
-          poster={selectedPoster}
-          onBack={() => setSelectedPosterId("")}
-        />
-      ) : page === "saved" ? (
-        <SavedDesignsPage
-          savedPosters={savedPosters}
-          savedIds={savedIds}
-          onSelect={setSelectedPosterId}
-          onToggleSaved={toggleSaved}
-          onBrowse={() => navigate("home")}
-        />
-      ) : page === "guide" ? (
-        <GuidePage onStart={() => navigate("new")} />
-      ) : page === "new" ? (
-        <NewDesignPage onBrowse={() => navigate("home")} />
-      ) : (
-        <main>
-          <section className="hero" aria-labelledby="hero-title">
-            <h1 id="hero-title">어떤 디자인을 만들고 싶으세요?</h1>
-            <p className="hero-copy">
-              간단하게 &quot;딸깍&quot;하고 포스터를 생성해보세요.
-            </p>
-            <div
-              className="category-tabs"
-              role="tablist"
-              aria-label="포스터 분류"
-            >
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  className={activeCategory === category ? "active" : ""}
-                  onClick={() => setActiveCategory(category)}
-                  role="tab"
-                  aria-selected={activeCategory === category}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="template-section" aria-label="포스터 템플릿">
-            <div className="section-heading">
-              <div>
-                <span className="section-kicker">추천 템플릿</span>
-                <h2>
-                  {activeCategory === "전체"
-                    ? "지금 인기 있는 디자인"
-                    : `${activeCategory} 디자인`}
-                </h2>
-              </div>
-              <p>{filteredPosters.length}개의 템플릿</p>
-            </div>
-
-            <div className="template-grid">
-              {filteredPosters.map((poster) => (
-                <TemplateCard
-                  key={poster.id}
-                  poster={poster}
-                  saved={savedIds.has(poster.id)}
-                  onSelect={() => setSelectedPosterId(poster.id)}
-                  onToggleSaved={() => toggleSaved(poster.id)}
-                />
-              ))}
-            </div>
-          </section>
-        </main>
-      )}
+      {children}
 
       <footer>
         <span>CLICK</span>
@@ -341,7 +238,7 @@ export default function App() {
             </div>
             <h2 id="home-dialog-title">편집 화면을 떠날까요?</h2>
             <p>
-              {selectedPoster
+              {isEditing
                 ? "진행 중인 편집 화면을 나가고 선택한 메뉴로 이동합니다."
                 : "현재 화면을 나가고 템플릿 메인으로 이동합니다."}
             </p>
@@ -350,11 +247,11 @@ export default function App() {
                 취소
               </button>
               <button type="button" onClick={confirmNavigation}>
-                {pendingPage === "home"
+                {pendingPath === "/"
                   ? "메인으로 돌아가기"
-                  : pendingPage === "saved"
+                  : pendingPath === "/saved"
                     ? "찜한 템플릿으로 이동"
-                    : pendingPage === "guide"
+                    : pendingPath === "/guide"
                       ? "이용 안내로 이동"
                       : "새 디자인으로 이동"}
               </button>

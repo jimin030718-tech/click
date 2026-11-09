@@ -18,13 +18,20 @@ Claude Code가 작업을 시작할 때마다 자동으로 읽는 프로젝트 �
 - 실행: `npm run dev` → http://localhost:3000
 - 확인: `npm run build` (수정 후 에러가 없는지 반드시 확인)
 
-## 파일 구조 (src/)
-- (루트) `app/layout.tsx` — html/메타 정보, `app/globals.css` — 전체 스타일(웹폰트 @import 맨 위), `app/page.tsx` → `app/ClientApp.tsx`가 `src/App.tsx`를 브라우저에서만 그림
-- `App.tsx` — 상단 메뉴, 페이지 이동, 홈(템플릿 목록), 맨 위로 가기 버튼
+## 파일 구조
+### 루트 app/ (주소 = 폴더)
+- `app/layout.tsx` — 모든 페이지 공통(메타 정보 + 상단 메뉴·푸터·맨 위로 버튼), `app/globals.css` — 전체 스타일(웹폰트 @import 맨 위)
+- `app/page.tsx` — 홈 `/` (카테고리 탭 + 템플릿 카드)
+- `app/saved/` `/saved` 찜한 템플릿, `app/guide/` `/guide` 이용 안내, `app/new/` `/new` 새 디자인, `app/design/[id]/` `/design/템플릿id` 편집기(2~5단계)
+
+### src/
+- `components/layout/AppShell.tsx` — 상단 메뉴, 모바일 메뉴, 푸터, 맨 위로 가기, '편집 화면을 떠날까요?' 창
+- `state/AppState.tsx` — 여러 화면이 같이 쓰는 값(찜 목록, 홈 카테고리, 편집기에서 돌아갈 주소)
+- `screens/EditorScreen.tsx` — 편집기 주소와 DesignFlow를 연결
 - `screens/DesignFlow.tsx` — 디자인 만들기 2~5단계 전체(정보 입력, 분위기, 편집기, 내보내기)
 - `screens/SavedPage.tsx` — 찜한 템플릿 / `screens/GuidePage.tsx` — 이용 안내 / `screens/NewDesignPage.tsx` — 새 디자인(크기 선택)
 - `components/PosterArtwork.tsx` — 포스터 그리기(사진·글자·로고, 편집기에서 글자 직접 수정·끌기)
-- `components/TemplateCard.tsx`, `components/UploadField.tsx`, `components/WorkflowSteps.tsx`
+- `components/ui/` — 여러 곳에서 쓰는 조각: `TemplateCard.tsx`, `UploadField.tsx`, `WorkflowSteps.tsx`
 - `data/posters.ts` — 카테고리, 템플릿 20종, 예시 문구, 카테고리별 질문
 - `data/styles.ts` — 폰트 조합, 분위기 7종과 색 조합
 - `screens/`는 원래 `pages/`였는데, Next.js 예약 폴더명과 겹쳐서 이름을 바꿈
