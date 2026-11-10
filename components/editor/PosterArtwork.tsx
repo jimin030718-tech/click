@@ -19,7 +19,6 @@ export function PosterArtwork({
   selectedText,
   onSelectText,
   onTextInput,
-  onTextPointerDown,
 }: {
   type: string
   layout: LayoutKind
@@ -53,6 +52,8 @@ export function PosterArtwork({
   selectedText?: TextElement
   onSelectText?: (element: TextElement) => void
   onTextInput?: (element: TextElement, value: string) => void
+  // 예전 드래그 방식용. 지금은 PosterMoveable이 드래그를 맡아서 쓰지 않습니다.
+  // (useDesignFlow가 아직 넘겨주고 있어서 자리만 남겨 둠)
   onTextPointerDown?: (
     event: ReactPointerEvent<HTMLElement>,
     element: TextElement,
@@ -149,6 +150,8 @@ export function PosterArtwork({
         : ""
 
     return {
+    // PosterMoveable이 이 글자를 찾을 때 쓰는 이름표
+    "data-text": element,
     role: editable ? ("textbox" as const) : undefined,
     tabIndex: editable ? 0 : undefined,
     contentEditable: editable,
@@ -169,26 +172,44 @@ export function PosterArtwork({
     }
   }
 
-  const dragHandle = (element: TextElement) =>
-    editable && selectedText === element ? (
-      <>
+  // 이동 핸들(위쪽 손잡이 + 네 테두리).
+  // 실제 드래그는 PosterMoveable(react-moveable)이 이 묶음(data-text-drag)을 잡아서 처리합니다.
+  // 묶음 자체는 클릭을 통과시키고(pointerEvents: none) 손잡이·테두리만 잡히게 해서,
+  // 글자를 클릭하면 지금처럼 수정 모드가 됩니다.
+  // 글자와 같은 만큼 옮겨 두어야 글자를 옮긴 뒤에도 핸들이 글자를 따라옵니다.
+  const dragHandle = (element: TextElement) => {
+    if (!editable || selectedText !== element) return null
+    const style = textStyles?.[element]
+    return (
+      <span
+        data-text-drag={element}
+        contentEditable={false}
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 5,
+          pointerEvents: "none",
+          transform: style
+            ? `translate3d(${style.x}cqw, ${style.y}cqh, 0)`
+            : undefined,
+        }}
+      >
         <i
           className="text-drag-handle"
-          contentEditable={false}
           aria-label="글자 상자 이동"
-          onPointerDown={(event) => onTextPointerDown?.(event, element)}
+          style={{ pointerEvents: "auto" }}
         />
         {["top", "right", "bottom", "left"].map((edge) => (
           <i
             className={`text-drag-edge edge-${edge}`}
-            contentEditable={false}
             aria-hidden="true"
             key={edge}
-            onPointerDown={(event) => onTextPointerDown?.(event, element)}
+            style={{ pointerEvents: "auto" }}
           />
         ))}
-      </>
-    ) : null
+      </span>
+    )
+  }
 
   return (
     <div

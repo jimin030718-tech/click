@@ -1,8 +1,14 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { fontCombinations } from "@/lib/styles"
 import { WorkflowSteps } from "@/components/ui/WorkflowSteps"
 import type { DesignFlowState } from "@/components/create/useDesignFlow"
+
+// react-moveable은 브라우저에서만 동작하므로 서버에서 미리 그리지 않습니다(ssr: false).
+const PosterMoveable = dynamic(() => import("@/components/editor/PosterMoveable"), {
+  ssr: false,
+})
 
 // 4단계: 편집기(배경·글자·사진·로고 부분 수정)
 // 상태는 useDesignFlow에 있고, 이 함수는 화면만 그립니다.
@@ -99,6 +105,7 @@ export function renderEditorStep(flow: DesignFlowState) {
             <div className="canvas-poster-wrap">
               <div className="canvas-poster" ref={canvasPosterRef}>
                 {preview}
+                <PosterMoveable flow={flow} />
               </div>
             </div>
             <p>
