@@ -305,6 +305,8 @@ export function PosterArtwork({
       )}
       <div
         className="editorial-brand"
+        // 편집기에서 로고를 올렸을 때만 붙는 이름표. EditorCanvas·PosterMoveable이 이걸로 로고를 찾습니다.
+        data-logo={editable && logoSrc ? "" : undefined}
         style={
           logoTransform
             ? {
@@ -314,7 +316,8 @@ export function PosterArtwork({
         }
       >
         {logoSrc ? (
-          <img src={logoSrc} alt="업로드한 브랜드 로고" />
+          // draggable={false}: 로고를 끌 때 브라우저 기본 "이미지 끌기"가 끼어들지 않게
+          <img src={logoSrc} alt="업로드한 브랜드 로고" draggable={false} />
         ) : customContent?.brandName ? (
           <span>{customContent.brandName}</span>
         ) : !customContent ? (

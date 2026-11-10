@@ -11,14 +11,16 @@ import type { DesignFlowState } from "@/components/create/useDesignFlow"
 import type { TextElement, TextObjectStyle } from "@/lib/styles"
 import styles from "./PosterMoveable.module.css"
 
-// 오른쪽 패널 "글자 크기" 슬라이더와 같은 범위 (EditorStep의 min/max)
-const MIN_TEXT_SIZE = 70
-const MAX_TEXT_SIZE = 140
+// 오른쪽 패널 슬라이더와 같은 범위 (EditorStep의 min/max)
+const TEXT_SIZE_RANGE = { min: 70, max: 140 } // 글자 크기(%)
+const TEXT_POSITION_LIMIT = 45 // 글자 위치: 포스터 대비 ±45%
+const LOGO_SCALE_RANGE = { min: 0.5, max: 1.8 } // 로고 크기 50~180%
+const LOGO_POSITION_LIMIT = 100 // 로고 위치: 로고 자신의 크기 대비 ±100%
 
 // 스마트 가이드: 이 거리(화면 px) 안으로 가까워지면 정렬선에 딱 붙습니다.
 const SNAP_PX = 6
 
-// 내 글자와 다른 글자의 왼쪽·가운데·오른쪽, 위·가운데·아래를 모두 맞춤 기준으로 씁니다.
+// 내 요소와 다른 요소의 왼쪽·가운데·오른쪽, 위·가운데·아래를 모두 맞춤 기준으로 씁니다.
 const ALL_SNAP_DIRECTIONS = {
   left: true,
   center: true,
@@ -38,6 +40,11 @@ type MoveableElements = {
   others: HTMLElement[]
 }
 
+type LogoTransform = { x: number; y: number; scale: number }
+
+// 지금 움직이는 것: 글자(어떤 글자인지) 또는 로고
+type GestureKind = { kind: "text"; element: TextElement } | { kind: "logo" }
+
 const sameElements = (a: MoveableElements, b: MoveableElements) =>
   a.target === b.target &&
   a.handle === b.handle &&
@@ -45,23 +52,36 @@ const sameElements = (a: MoveableElements, b: MoveableElements) =>
   a.others.length === b.others.length &&
   a.others.every((element, index) => element === b.others[index])
 
-// 4단계 편집기에서 선택한 글자를 react-moveable로 옮기고(드래그) 크기를 바꿉니다(모서리 손잡이).
-// - 이동: 핸들(위쪽 손잡이·네 테두리)을 잡아야만 움직입니다. 글자를 클릭하면 지금처럼 수정 모드예요.
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value))
+
+// 4단계 편집기에서 선택한 글자 또는 로고를 react-moveable로 옮기고(드래그) 크기를 바꿉니다(모서리 손잡이).
+// - 글자 이동: 핸들(위쪽 손잡이·네 테두리)을 잡아야만 움직입니다. 글자를 클릭하면 지금처럼 수정 모드예요.
+// - 로고 이동: 로고를 클릭해 고른 뒤 로고를 그대로 끌면 됩니다.
 // - 크기: 모서리 손잡이를 끌면 가로세로 비율을 유지한 채 커지고 작아집니다.
-// - Moveable이 글자의 style을 직접 바꾸지 않습니다.
-//   위치는 포스터 폭·높이 대비 %(cqw/cqh), 크기는 size(%)로 setTextStyles에 저장하고,
+// - Moveable이 style을 직접 바꾸지 않습니다.
+//   글자는 위치를 포스터 대비 %(cqw/cqh), 크기를 size(%)로 setTextStyles에,
+//   로고는 위치를 "로고 자신의 크기" 대비 %, 크기를 scale로 setLogoTransform에 저장하고,
 //   그리는 것은 PosterArtwork가 합니다. 그래서 편집기와 완성본이 같은 모습입니다.
 // - 드래그 한 번 = 되돌리기 한 칸, 크기 조절 한 번 = 되돌리기 한 칸.
-// - 스마트 가이드: 포스터 정중앙(점선)과 다른 글자의 가장자리·가운데(실선)에 6px 안으로
+// - 스마트 가이드: 포스터 정중앙(점선)과 다른 글자·로고의 가장자리·가운데(실선)에 6px 안으로
 //   가까워지면 딱 붙습니다. Alt 키를 누르고 있으면 붙지 않고 자유롭게 움직입니다.
 //   (참고: legacy/src_old/PosterEditor.tsx의 예전 스마트 가이드)
-export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
+export default function PosterMoveable({
+  flow,
+  logoSelected,
+}: {
+  flow: DesignFlowState
+  logoSelected: boolean
+}) {
   const {
     canvasPosterRef,
     selectedText,
     textStyles,
+    logoTransform,
     form,
     setTextStyles,
+    setLogoTransform,
     captureUndoSnapshot,
   } = flow
   const moveableRef = useRef<Moveable>(null)
@@ -76,23 +96,24 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
   const gestureActive = useRef(false)
 
   // 드래그·크기 조절을 시작한 순간의 값 (손을 뗄 때까지 기억)
+  // unitX·unitY = 위치 1(%)이 화면에서 몇 px인지 (글자는 포스터 기준, 로고는 로고 자신 기준)
   const gestureOrigin = useRef({
-    element: "title" as TextElement,
-    pointerX: 0,
-    pointerY: 0,
+    gesture: { kind: "text", element: "title" } as GestureKind,
     x: 0,
     y: 0,
-    size: 100,
-    posterWidth: 1,
-    posterHeight: 1,
+    size: 1, // 글자는 size(%), 로고는 scale
+    unitX: 1,
+    unitY: 1,
     recorded: false,
   })
 
-  // 드래그·크기 조절 중 마우스 이벤트는 아주 자주 옵니다. 올 때마다 setTextStyles를 부르면
+  // 드래그·크기 조절 중 마우스 이벤트는 아주 자주 옵니다. 올 때마다 상태를 저장하면
   // 편집기 전체가 계속 다시 그려지다가, 앞의 그리기가 끝나기 전에 다음 갱신이 쌓여
   // React가 "무한 반복"으로 판단하고 멈춥니다(Maximum update depth exceeded).
   // 그래서 바뀔 값은 여기에 잠깐 적어 두고, 화면 한 프레임에 한 번만 저장합니다.
-  const pendingPatch = useRef<Partial<TextObjectStyle> | null>(null)
+  const pendingPatch = useRef<{ x?: number; y?: number; size?: number } | null>(
+    null,
+  )
   const frameRef = useRef<number | null>(null)
 
   const applyPendingPatch = () => {
@@ -100,15 +121,27 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
     const patch = pendingPatch.current
     if (!patch) return
     pendingPatch.current = null
-    const element = gestureOrigin.current.element
+    const { gesture } = gestureOrigin.current
+    if (gesture.kind === "logo") {
+      const logoPatch: Partial<LogoTransform> = {}
+      if (patch.x !== undefined) logoPatch.x = patch.x
+      if (patch.y !== undefined) logoPatch.y = patch.y
+      if (patch.size !== undefined) logoPatch.scale = patch.size
+      setLogoTransform((current) => ({ ...current, ...logoPatch }))
+      return
+    }
+    const element = gesture.element
     setTextStyles((current) => ({
       ...current,
-      [element]: { ...current[element], ...patch },
+      [element]: {
+        ...current[element],
+        ...(patch as Partial<TextObjectStyle>),
+      },
     }))
   }
 
   // 바뀔 값을 적어 두고, 다음 화면 프레임에 한 번만 저장하도록 예약합니다.
-  const schedulePatch = (patch: Partial<TextObjectStyle>) => {
+  const schedulePatch = (patch: { x?: number; y?: number; size?: number }) => {
     pendingPatch.current = { ...pendingPatch.current, ...patch }
     if (frameRef.current === null) {
       frameRef.current = requestAnimationFrame(applyPendingPatch)
@@ -156,63 +189,90 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
     [],
   )
 
-  // 화면이 다시 그려질 때마다 "지금 선택된 글자", "그 글자의 핸들",
-  // "포스터", "맞춤 기준이 될 다른 글자들"을 찾아 둡니다.
-  // (글자가 비었다가 다시 생기면 요소가 바뀌기 때문에 매번 확인하고, 바뀌었을 때만 저장)
+  // 화면이 다시 그려질 때마다 "지금 움직일 대상", "잡을 곳(핸들)",
+  // "포스터", "맞춤 기준이 될 다른 요소들"을 찾아 둡니다.
+  // (요소가 비었다가 다시 생기면 바뀌기 때문에 매번 확인하고, 바뀌었을 때만 저장)
   useLayoutEffect(() => {
     const root = canvasPosterRef.current
-    const next: MoveableElements = {
-      target:
-        root?.querySelector<HTMLElement>(`[data-text="${selectedText}"]`) ??
-        null,
-      handle:
-        root?.querySelector<HTMLElement>(
-          `[data-text-drag="${selectedText}"]`,
-        ) ?? null,
-      poster: root?.querySelector<HTMLElement>(".editorial-poster") ?? null,
-      others: Array.from(
-        root?.querySelectorAll<HTMLElement>("[data-text]") ?? [],
-      ).filter((element) => element.dataset.text !== selectedText),
-    }
+    const logo = root?.querySelector<HTMLElement>("[data-logo]") ?? null
+    const texts = Array.from(
+      root?.querySelectorAll<HTMLElement>("[data-text]") ?? [],
+    )
+    const poster = root?.querySelector<HTMLElement>(".editorial-poster") ?? null
+    const next: MoveableElements =
+      logoSelected && logo
+        ? // 로고: 로고 자체를 잡고 끕니다. 맞춤 기준은 모든 글자.
+          { target: logo, handle: logo, poster, others: texts }
+        : {
+            // 글자: 이동 핸들을 잡고 끕니다. 맞춤 기준은 다른 글자 + 로고.
+            target:
+              root?.querySelector<HTMLElement>(
+                `[data-text="${selectedText}"]`,
+              ) ?? null,
+            handle:
+              root?.querySelector<HTMLElement>(
+                `[data-text-drag="${selectedText}"]`,
+              ) ?? null,
+            poster,
+            others: [
+              ...texts.filter(
+                (element) => element.dataset.text !== selectedText,
+              ),
+              ...(logo ? [logo] : []),
+            ],
+          }
     if (!sameElements(next, elements)) setElements(next)
   })
 
-  // 글자 위치·크기·내용이 바뀐 뒤에는 Moveable 테두리를 글자에 다시 맞춥니다.
+  // 위치·크기·내용이 바뀐 뒤에는 Moveable 테두리를 다시 맞춥니다.
   useEffect(() => {
     moveableRef.current?.updateRect()
-  }, [textStyles, form, selectedText, elements])
+  }, [textStyles, logoTransform, form, selectedText, logoSelected, elements])
+
+  const isLogo = logoSelected && elements.target?.dataset.logo !== undefined
 
   // 드래그·크기 조절을 시작할 때 공통으로 시작 값을 적어 둡니다.
-  const rememberOrigin = (clientX: number, clientY: number) => {
+  const rememberOrigin = () => {
     gestureActive.current = true
+    if (isLogo && elements.target) {
+      // 로고 위치(%)는 로고 상자 자신의 크기 기준입니다. (offsetWidth = 크기 조절 전 원래 크기)
+      gestureOrigin.current = {
+        gesture: { kind: "logo" },
+        x: logoTransform.x,
+        y: logoTransform.y,
+        size: logoTransform.scale,
+        unitX: (elements.target.offsetWidth || 1) / 100,
+        unitY: (elements.target.offsetHeight || 1) / 100,
+        recorded: false,
+      }
+      return
+    }
     const posterBounds = elements.poster?.getBoundingClientRect()
     const style = textStyles[selectedText]
     gestureOrigin.current = {
-      element: selectedText,
-      pointerX: clientX,
-      pointerY: clientY,
+      gesture: { kind: "text", element: selectedText },
       x: style.x,
       y: style.y,
       size: style.size,
-      posterWidth: posterBounds?.width || 405,
-      posterHeight: posterBounds?.height || 573,
+      unitX: (posterBounds?.width || 405) / 100,
+      unitY: (posterBounds?.height || 573) / 100,
       recorded: false,
     }
   }
 
-  const handleDragStart = (event: OnDragStart) => {
-    rememberOrigin(event.clientX, event.clientY)
-  }
-
-  // 시작 위치에서 [가로, 세로] 픽셀만큼 옮긴 위치를 포스터 대비 %로 바꿉니다.
-  // 예전과 같이 -45~45 안에서만 움직입니다.
+  // 시작 위치에서 [가로, 세로] 픽셀만큼 옮긴 위치를 %로 바꾸고, 슬라이더와 같은 범위로 제한합니다.
   const positionFromDistance = ([distX, distY]: number[]) => {
     const origin = gestureOrigin.current
-    const clamp = (value: number) => Math.max(-45, Math.min(45, value))
+    const limit =
+      origin.gesture.kind === "logo" ? LOGO_POSITION_LIMIT : TEXT_POSITION_LIMIT
     return {
-      x: clamp(origin.x + (distX / origin.posterWidth) * 100),
-      y: clamp(origin.y + (distY / origin.posterHeight) * 100),
+      x: clamp(origin.x + distX / origin.unitX, -limit, limit),
+      y: clamp(origin.y + distY / origin.unitY, -limit, limit),
     }
+  }
+
+  const handleDragStart = (_event: OnDragStart) => {
+    rememberOrigin()
   }
 
   const handleDrag = (event: OnDrag) => {
@@ -224,22 +284,32 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
     schedulePatch(positionFromDistance(event.beforeDist))
   }
 
-  const handleScaleStart = (event: OnScaleStart) => {
-    rememberOrigin(event.clientX, event.clientY)
+  const handleScaleStart = (_event: OnScaleStart) => {
+    rememberOrigin()
   }
 
   const handleScale = (event: OnScale) => {
     const origin = gestureOrigin.current
     // dist = 시작 크기 대비 몇 배가 됐는지 (비율 유지라 가로·세로가 같음)
     const ratio = event.dist[0]
-    const nextSize = Math.round(
-      Math.max(MIN_TEXT_SIZE, Math.min(MAX_TEXT_SIZE, origin.size * ratio)),
-    )
+    // 글자 size는 슬라이더처럼 정수(%), 로고 scale은 0.01 단위로 저장합니다.
+    const nextSize =
+      origin.gesture.kind === "logo"
+        ? Math.round(
+            clamp(
+              origin.size * ratio,
+              LOGO_SCALE_RANGE.min,
+              LOGO_SCALE_RANGE.max,
+            ) * 100,
+          ) / 100
+        : Math.round(
+            clamp(origin.size * ratio, TEXT_SIZE_RANGE.min, TEXT_SIZE_RANGE.max),
+          )
     if (nextSize === origin.size && !origin.recorded) return
     recordUndoOnce()
     // 크기를 바꿀 때 반대쪽 모서리가 제자리에 있도록 Moveable이 알려 주는 이동량(event.drag)도
     // 함께 저장합니다. 그래야 스냅으로 맞춘 가장자리가 실제 그림과도 정확히 맞습니다.
-    // 이동량은 "크기가 변한 만큼"에 비례하므로, 최소·최대(70~140)에 걸리거나 정수로 반올림해
+    // 이동량은 "크기가 변한 만큼"에 비례하므로, 최소·최대에 걸리거나 반올림해
     // 실제 크기가 덜 변했으면 이동량도 같은 비율로 줄입니다.
     const appliedRatio = nextSize / origin.size
     const factor = ratio === 1 ? 0 : (appliedRatio - 1) / (ratio - 1)
@@ -257,12 +327,13 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
       ref={moveableRef}
       className={styles.moveable}
       target={elements.target}
-      dragTarget={elements.handle}
+      // 글자는 이동 핸들만 잡히게, 로고는 로고 자체를 잡고 끕니다.
+      dragTarget={isLogo ? undefined : elements.handle}
       draggable
       scalable
       keepRatio
-      // 오른쪽 위(ne)는 이동 손잡이와 겹쳐서 뺐습니다.
-      renderDirections={["nw", "sw", "se"]}
+      // 글자: 오른쪽 위(ne)는 이동 손잡이와 겹쳐서 뺐습니다. 로고는 네 모서리 모두.
+      renderDirections={isLogo ? ["nw", "ne", "sw", "se"] : ["nw", "sw", "se"]}
       origin={false}
       useResizeObserver
       // 스마트 가이드(정렬선·스냅)

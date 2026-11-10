@@ -1,0 +1,24 @@
+/* EditorCanvas 전용 스타일 (공용 app/globals.css에 넣지 않음) */
+
+/* 감싸는 상자는 화면 배치에 영향을 주지 않습니다(자식이 그대로 원래 자리에 놓임). */
+.canvas {
+  display: contents;
+}
+
+/* 편집기의 로고는 끌 수 있다는 표시 */
+.canvas :global([data-logo]) {
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+
+/* 로고를 고른 동안에는 글자 선택 표시(청록 테두리·이동 핸들)를 숨깁니다. */
+.logoSelected :global(.editable-text.selected) {
+  outline-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.logoSelected :global([data-text-drag]) {
+  display: none;
+}
