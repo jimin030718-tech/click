@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
-import { flushSync } from "react-dom"
 import Moveable, { type OnDrag, type OnDragStart } from "react-moveable"
 import type { DesignFlowState } from "@/components/create/useDesignFlow"
+import type { TextElement } from "@/lib/styles"
 
 // 4단계 편집기에서 선택한 글자를 react-moveable로 드래그해 옮깁니다.
 // - 핸들(위쪽 손잡이·네 테두리)을 잡아야만 움직입니다. 글자를 클릭하면 지금처럼 수정 모드예요.
@@ -28,6 +28,7 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
 
   // 드래그를 시작한 순간의 값 (손을 뗄 때까지 기억)
   const dragOrigin = useRef({
+    element: "title" as TextElement,
     pointerX: 0,
     pointerY: 0,
     x: 0,
@@ -36,6 +37,33 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
     posterHeight: 1,
     recorded: false,
   })
+
+  // 드래그 중 마우스 이벤트는 아주 자주 옵니다. 올 때마다 setTextStyles를 부르면
+  // 편집기 전체가 계속 다시 그려지다가, 앞의 그리기가 끝나기 전에 다음 갱신이 쌓여
+  // React가 "무한 반복"으로 판단하고 멈춥니다(Maximum update depth exceeded).
+  // 그래서 새 위치는 여기에 잠깐 적어 두고, 화면 한 프레임에 한 번만 저장합니다.
+  const pendingPosition = useRef<{ x: number; y: number } | null>(null)
+  const frameRef = useRef<number | null>(null)
+
+  const applyPendingPosition = () => {
+    frameRef.current = null
+    const next = pendingPosition.current
+    if (!next) return
+    pendingPosition.current = null
+    const element = dragOrigin.current.element
+    setTextStyles((current) => ({
+      ...current,
+      [element]: { ...current[element], x: next.x, y: next.y },
+    }))
+  }
+
+  // 편집기를 떠날 때 예약해 둔 저장이 남아 있으면 취소합니다.
+  useEffect(
+    () => () => {
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
+    },
+    [],
+  )
 
   // 화면이 다시 그려질 때마다 "지금 선택된 글자"와 "그 글자의 핸들"을 찾아 둡니다.
   // (글자가 비었다가 다시 생기면 요소가 바뀌기 때문에 매번 확인)
@@ -61,6 +89,7 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
       ?.querySelector(".editorial-poster")
       ?.getBoundingClientRect()
     dragOrigin.current = {
+      element: selectedText,
       pointerX: event.clientX,
       pointerY: event.clientY,
       x: textStyles[selectedText].x,
@@ -89,10 +118,17 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
     const nextX = clamp(origin.x + (deltaX / origin.posterWidth) * 100)
     const nextY = clamp(origin.y + (deltaY / origin.posterHeight) * 100)
 
-    setTextStyles((current) => ({
-      ...current,
-      [selectedText]: { ...current[selectedText], x: nextX, y: nextY },
-    }))
+    // 바로 저장하지 않고, 다음 화면 프레임에 한 번만 저장합니다.
+    pendingPosition.current = { x: nextX, y: nextY }
+    if (frameRef.current === null) {
+      frameRef.current = requestAnimationFrame(applyPendingPosition)
+    }
+  }
+
+  // 손을 떼면 아직 저장 안 된 마지막 위치를 바로 저장합니다.
+  const handleDragEnd = () => {
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
+    applyPendingPosition()
   }
 
   if (!elements.target || !elements.handle) return null
@@ -104,10 +140,10 @@ export default function PosterMoveable({ flow }: { flow: DesignFlowState }) {
       dragTarget={elements.handle}
       draggable
       origin={false}
-      flushSync={flushSync}
       useResizeObserver
       onDragStart={handleDragStart}
       onDrag={handleDrag}
+      onDragEnd={handleDragEnd}
     />
   )
 }
