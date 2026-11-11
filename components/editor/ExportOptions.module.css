@@ -1,0 +1,55 @@
+/* ExportOptions 전용 스타일 (공용 app/globals.css에 넣지 않음) */
+
+.formatPicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.formatLabel {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.formatButtons {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(50, 50, 50, 0.08);
+}
+
+.formatButtons button {
+  min-width: 64px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formatButtons button[aria-checked="true"] {
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.formatHint {
+  flex-basis: 100%;
+  margin: 0;
+  color: rgba(50, 50, 50, 0.6);
+  font-size: 12px;
+}
+
+.error {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fde8ef;
+  color: #b0124f;
+  font-size: 13px;
+  font-weight: 600;
+}

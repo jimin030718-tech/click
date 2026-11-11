@@ -1,6 +1,7 @@
 "use client"
 
 import { WorkflowSteps } from "@/components/ui/WorkflowSteps"
+import { ExportOptions } from "@/components/editor/ExportOptions"
 import type { DesignFlowState } from "@/components/create/useDesignFlow"
 
 // 5단계: 내보내기
@@ -10,7 +11,6 @@ export function renderExportStep(flow: DesignFlowState) {
   const {
     step,
     downloaded,
-    setDownloaded,
     rating,
     setRating,
     timeSaved,
@@ -19,26 +19,6 @@ export function renderExportStep(flow: DesignFlowState) {
     preview,
   } = flow
 
-    const exportOptions = [
-      {
-        id: "print",
-        label: "매장 부착·일반 프린터용",
-        detail: "A4/A3 고화질 · PNG 또는 PDF",
-        badge: "추천",
-      },
-      {
-        id: "press",
-        label: "인쇄소 의뢰용 초고화질",
-        detail: "2배 업스케일 원본 · PNG 또는 PDF",
-        badge: "2480 × 3508",
-      },
-      {
-        id: "social",
-        label: "SNS·배달앱 업로드용",
-        detail: "인스타그램과 스마트플레이스 최적화",
-        badge: "디지털",
-      },
-    ]
     return (
       <main className="workflow-page export-page-view">
         <WorkflowSteps step={step} />
@@ -63,29 +43,14 @@ export function renderExportStep(flow: DesignFlowState) {
             <span>최종 미리보기 · 1240 × 1754 px</span>
           </aside>
           <section className="export-options">
-            <div className="export-list">
-              {exportOptions.map((option) => (
-                <button
-                  type="button"
-                  key={option.id}
-                  onClick={() => setDownloaded(option.id)}
-                >
-                  <span className={`export-icon export-icon-${option.id}`} />
-                  <span>
-                    <strong>{option.label}</strong>
-                    <small>{option.detail}</small>
-                  </span>
-                  <b>{option.badge}</b>
-                  <i>↓</i>
-                </button>
-              ))}
-            </div>
+            {/* 파일 형식 고르기 + 내보내기 버튼(실제 PNG/PDF 저장) */}
+            <ExportOptions flow={flow} />
             {downloaded && (
               <div className="download-success">
                 <span>✓</span>
                 <div>
-                  <strong>다운로드를 준비했어요</strong>
-                  <p>곧 다운로드가 시작돼요.</p>
+                  <strong>파일을 저장했어요</strong>
+                  <p>브라우저의 다운로드 폴더를 확인해 주세요.</p>
                 </div>
               </div>
             )}

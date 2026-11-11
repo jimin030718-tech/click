@@ -2,6 +2,7 @@
 
 import { fontCombinations } from "@/lib/styles"
 import { WorkflowSteps } from "@/components/ui/WorkflowSteps"
+import { EditorCanvas } from "@/components/editor/EditorCanvas"
 import type { DesignFlowState } from "@/components/create/useDesignFlow"
 
 // 4단계: 편집기(배경·글자·사진·로고 부분 수정)
@@ -47,7 +48,6 @@ export function renderEditorStep(flow: DesignFlowState) {
     startPhotoDrag,
     movePhoto,
     goBackStep,
-    preview,
   } = flow
 
     return (
@@ -98,7 +98,8 @@ export function renderEditorStep(flow: DesignFlowState) {
             </div>
             <div className="canvas-poster-wrap">
               <div className="canvas-poster" ref={canvasPosterRef}>
-                {preview}
+                {/* 포스터 + 드래그·크기 조절·정렬선(글자·로고 선택 포함) */}
+                <EditorCanvas flow={flow} />
               </div>
             </div>
             <p>
@@ -495,7 +496,7 @@ export function renderEditorStep(flow: DesignFlowState) {
                     <label className="range-control">
                       <span>
                         <b>가로 위치</b>
-                        <em>{logoTransform.x}%</em>
+                        <em>{Math.round(logoTransform.x)}%</em>
                       </span>
                       <input
                         type="range"
@@ -512,7 +513,7 @@ export function renderEditorStep(flow: DesignFlowState) {
                     <label className="range-control">
                       <span>
                         <b>세로 위치</b>
-                        <em>{logoTransform.y}%</em>
+                        <em>{Math.round(logoTransform.y)}%</em>
                       </span>
                       <input
                         type="range"
