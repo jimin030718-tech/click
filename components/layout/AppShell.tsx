@@ -3,9 +3,10 @@
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { useAppState } from "@/state/AppState"
 
-type MenuPath = "/" | "/saved" | "/guide" | "/new"
+type MenuPath = "/" | "/saved" | "/guide" | "/new" | "/mypage"
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter()
@@ -21,6 +22,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [floatingUiOpen, setFloatingUiOpen] = useState(false)
+  // 로그인 상태 (C 담당): 확인 중일 때는 버튼을 숨겨서 '로그인'이 잠깐 깜빡이지 않게 합니다.
+  const { status: authStatus } = useSession()
+  const loginHref = `/login?callbackUrl=${encodeURIComponent(pathname)}`
 
   // 디자인 만들기(/create/...)에 있으면, 편집기를 열기 전 화면을 기준으로 메뉴를 표시합니다.
   const isEditing = pathname.startsWith("/create/")
@@ -160,6 +164,26 @@ export default function AppShell({ children }: { children: ReactNode }) {
           >
             이용 안내
           </Link>
+          {authStatus === "authenticated" && (
+            <Link
+              href="/mypage"
+              scroll={false}
+              className={basePath === "/mypage" ? "current" : ""}
+              aria-current={basePath === "/mypage" ? "page" : undefined}
+              onClick={(event) => onMenuClick(event, "/mypage")}
+            >
+              내 정보
+            </Link>
+          )}
+          {authStatus === "unauthenticated" && (
+            <Link
+              href={loginHref}
+              scroll={false}
+              className={pathname === "/login" ? "current" : ""}
+            >
+              로그인
+            </Link>
+          )}
           <button
             type="button"
             className={`mobile-menu-trigger ${mobileMenuOpen ? "open" : ""}`}
@@ -219,6 +243,28 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   <span>이용 안내</span>
                   <span aria-hidden="true">→</span>
                 </Link>
+                {authStatus === "authenticated" && (
+                  <Link
+                    href="/mypage"
+                    scroll={false}
+                    className={basePath === "/mypage" ? "current" : ""}
+                    aria-current={basePath === "/mypage" ? "page" : undefined}
+                    onClick={(event) => onMenuClick(event, "/mypage")}
+                  >
+                    <span>내 정보</span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                )}
+                {authStatus === "unauthenticated" && (
+                  <Link
+                    href={loginHref}
+                    scroll={false}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <span>로그인</span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                )}
                 <Link
                   href="/new"
                   scroll={false}
@@ -286,7 +332,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
                     ? "찜한 템플릿으로 이동"
                     : pendingPath === "/guide"
                       ? "이용 안내로 이동"
-                      : "새 디자인으로 이동"}
+                      : pendingPath === "/mypage"
+                        ? "내 정보로 이동"
+                        : "새 디자인으로 이동"}
               </button>
             </div>
           </section>

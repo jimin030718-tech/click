@@ -6,7 +6,8 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { auth, signIn, signOut } from "@/lib/auth"
+import { auth, signIn } from "@/lib/auth"
+import LogoutButton from "@/components/auth/LogoutButton"
 import styles from "./login.module.css"
 
 export const metadata: Metadata = {
@@ -52,11 +53,6 @@ export default async function LoginPage({
     await signIn("kakao", { redirectTo: callbackUrl ?? "/" })
   }
 
-  async function logout() {
-    "use server"
-    await signOut({ redirectTo: "/" })
-  }
-
   return (
     <main className={styles.page}>
       <section className={styles.card}>
@@ -68,14 +64,10 @@ export default async function LoginPage({
             </h1>
             <p className={styles.desc}>카카오 계정으로 로그인되어 있어요.</p>
             <div className={styles.actions}>
-              <Link href="/" className={styles.primary}>
-                템플릿 보러 가기
+              <Link href="/mypage" className={styles.primary}>
+                내 정보 보기
               </Link>
-              <form action={logout}>
-                <button type="submit" className={styles.secondary}>
-                  로그아웃
-                </button>
-              </form>
+              <LogoutButton className={styles.secondary} />
             </div>
           </>
         ) : (
