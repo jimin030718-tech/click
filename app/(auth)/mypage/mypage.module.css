@@ -132,3 +132,94 @@
 .logout:hover {
   color: var(--ink);
 }
+
+/* 가게 기본정보 입력칸 */
+.form {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+  word-break: keep-all;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.fieldLabel {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fieldLabel em {
+  color: #9a9a9a;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.inputWrap {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.inputWrap:focus-within {
+  border-color: var(--ink);
+}
+
+.prefix {
+  margin-right: 2px;
+  color: #8a8a8a;
+  font-size: 15px;
+}
+
+.inputWrap input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* 16px 미만이면 아이폰에서 입력할 때 화면이 확대돼요 */
+}
+
+.save {
+  height: 50px;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.save:disabled {
+  background: #c9c9c9;
+  cursor: default;
+}
+
+.success,
+.fail {
+  margin: 0;
+  font-size: 14px;
+  text-align: center;
+}
+
+.success {
+  color: #2e7d4f;
+}
+
+.fail {
+  color: #c03030;
+}

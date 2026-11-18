@@ -7,6 +7,9 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import LogoutButton from "@/components/auth/LogoutButton"
+import { getMyBusinessInfo } from "@/lib/db/actions"
+import { emptyBusinessInfo } from "@/lib/db/types"
+import BusinessInfoForm from "./BusinessInfoForm"
 import styles from "./mypage.module.css"
 
 export const metadata: Metadata = {
@@ -18,6 +21,7 @@ export default async function MyPage() {
   if (!session?.user) redirect("/login?callbackUrl=/mypage")
 
   const { name, image } = session.user
+  const businessInfo = await getMyBusinessInfo().catch(() => null)
 
   return (
     <main className={styles.page}>
@@ -44,15 +48,16 @@ export default async function MyPage() {
         </div>
       </section>
 
-      {/* 가게 기본정보 — DB 연결 후 저장·불러오기 기능을 붙입니다 */}
+      {/* 가게 기본정보 — DB(business_info)에 저장 */}
       <section className={styles.card}>
         <div className={styles.cardHead}>
           <h2 className={styles.cardTitle}>가게 기본정보</h2>
-          <span className={styles.badge}>준비 중</span>
+          <span className={styles.badge}>모두 선택</span>
         </div>
         <p className={styles.desc}>
-          가게 이름과 로고를 저장해 두면, 다음 포스터부터 자동으로 채워드려요.
+          저장해 두면 포스터를 만들 때 &lsquo;내 가게 정보 불러오기&rsquo;로 한 번에 채워져요.
         </p>
+        <BusinessInfoForm initial={businessInfo ?? emptyBusinessInfo} />
       </section>
 
       {/* 바로가기 */}

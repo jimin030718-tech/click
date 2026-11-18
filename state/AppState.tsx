@@ -5,14 +5,17 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react"
+import { useSession } from "next-auth/react"
+import { mergeFavorites, setFavorite } from "@/lib/db/actions"
 
 const FAVORITES_KEY = "click-favorite-templates"
 
 type AppState = {
-  /** 찜한 템플릿 id (브라우저 localStorage에 저장) */
+  /** 찜한 템플릿 id (브라우저 localStorage에 저장 + 로그인했으면 DB favorites 에도 저장) */
   savedIds: Set<string>
   /** localStorage에서 찜 목록을 다 읽었는지 */
   savedLoaded: boolean
@@ -53,14 +56,37 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(FAVORITES_KEY, JSON.stringify([...savedIds]))
   }, [savedIds, savedLoaded])
 
-  const toggleSaved = useCallback((id: string) => {
-    setSavedIds((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
+  // 로그인한 사장님은 찜 목록을 DB에도 저장합니다. (C 담당)
+  // 로그인 직후 한 번: 이 브라우저의 찜 + 계정의 찜을 합쳐서 양쪽을 똑같이 맞춥니다.
+  const { status: authStatus } = useSession()
+  const loggedIn = authStatus === "authenticated"
+  const syncedRef = useRef(false)
+
+  useEffect(() => {
+    if (!loggedIn || !savedLoaded || syncedRef.current) return
+    syncedRef.current = true
+    mergeFavorites([...savedIds])
+      .then((ids) => {
+        if (ids) setSavedIds((current) => new Set([...current, ...ids]))
+      })
+      .catch(() => {
+        // DB에 문제가 있으면 브라우저 저장만 사용
+      })
+  }, [loggedIn, savedLoaded, savedIds])
+
+  const toggleSaved = useCallback(
+    (id: string) => {
+      const willSave = !savedIds.has(id)
+      setSavedIds((current) => {
+        const next = new Set(current)
+        if (willSave) next.add(id)
+        else next.delete(id)
+        return next
+      })
+      if (loggedIn) setFavorite(id, willSave).catch(() => {})
+    },
+    [savedIds, loggedIn],
+  )
 
   const snapshotSavedView = useCallback(() => {
     setSavedViewIds(new Set(savedIds))
