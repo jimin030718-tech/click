@@ -72,7 +72,7 @@ export default async function LoginPage({
           </>
         ) : (
           <>
-            <span className={styles.kicker}>딸깍 포스터 시작하기</span>
+            <img className={styles.logo} src="/assets/click-logo.png" alt="CLICK" />
             <h1 className={styles.title}>
               카카오로 3초 만에
               <br />
