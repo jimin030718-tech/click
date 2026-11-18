@@ -4,6 +4,8 @@ import { fontCombinations, type TextElement, type TextObjectStyle } from "@/lib/
 import { UploadField } from "@/components/ui/UploadField"
 import { WorkflowSteps } from "@/components/ui/WorkflowSteps"
 import type { DesignFlowState } from "@/components/create/useDesignFlow"
+import LoadBusinessInfo from "@/components/create/LoadBusinessInfo"
+import RememberBusinessInfo from "@/components/create/RememberBusinessInfo"
 
 // 2단계: 사진·로고·문구 정보 입력
 // 상태는 useDesignFlow에 있고, 이 함수는 화면만 그립니다.
@@ -159,6 +161,11 @@ export function renderInfoStep(flow: DesignFlowState) {
               </div>
               <b>제목만 필수</b>
             </div>
+            <LoadBusinessInfo
+              form={form}
+              updateForm={updateForm}
+              placeFieldLabel={placeFieldLabel}
+            />
             <div className="dynamic-fields">
               <label onFocus={() => setActiveField("EYEBROW")}>
                 <span>
@@ -297,6 +304,7 @@ export function renderInfoStep(flow: DesignFlowState) {
                 </small>
               </label>
             </div>
+            <RememberBusinessInfo brandName={form.brandName} info={form.info} />
           </div>
 
           <div className="form-section">
