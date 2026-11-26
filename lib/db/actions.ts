@@ -6,7 +6,13 @@
 import { auth } from "@/lib/auth"
 import { posters } from "@/lib/posters"
 import { isDbConfigured, sql, upsertUser } from "@/lib/db"
-import { businessInfoLimits as limits, type BusinessInfo } from "@/lib/db/types"
+import { checkAiQuota, type AiFeature } from "@/lib/db/aiUsage"
+import {
+  businessInfoLimits as limits,
+  isBlobUrl,
+  type BusinessInfo,
+  type SavedBusinessInfo,
+} from "@/lib/db/types"
 
 // 로그인한 사람 확인. 로그인 안 했거나 DB 설정이 없으면 null
 async function currentUser() {
@@ -20,11 +26,11 @@ async function currentUser() {
 // ── 가게 기본정보 ─────────────────────────────
 
 /** 내 가게 정보 불러오기. 로그인 안 했거나 저장한 적 없으면 null */
-export async function getMyBusinessInfo(): Promise<BusinessInfo | null> {
+export async function getMyBusinessInfo(): Promise<SavedBusinessInfo | null> {
   const user = await currentUser()
   if (!user) return null
   const rows = await sql`
-    SELECT shop_name, phone, instagram, address, hours
+    SELECT shop_name, phone, instagram, address, hours, logo_url
     FROM business_info WHERE kakao_id = ${user.id}`
   const row = rows[0]
   if (!row) return null
@@ -34,6 +40,7 @@ export async function getMyBusinessInfo(): Promise<BusinessInfo | null> {
     instagram: row.instagram,
     address: row.address,
     hours: row.hours,
+    logoUrl: row.logo_url ?? null,
   }
 }
 
@@ -73,7 +80,7 @@ export async function saveMyBusinessInfo(
  * - 값이 있는 칸만 바꾸고, 빈 칸("")은 원래 저장된 값을 그대로 둡니다.
  */
 export async function rememberBusinessInfo(
-  input: Partial<BusinessInfo>,
+  input: Partial<BusinessInfo> & { logoUrl?: string },
 ): Promise<{ ok: boolean }> {
   const user = await currentUser()
   if (!user) return { ok: false }
@@ -83,15 +90,18 @@ export async function rememberBusinessInfo(
     clean[key] = String(input?.[key] ?? "").trim().slice(0, limits[key])
   }
   clean.instagram = clean.instagram.replace(/^@+/, "")
-  if (!Object.values(clean).some(Boolean)) return { ok: true }
+  // 로고는 우리 Blob 에 올린 주소만 받아요.
+  const logoUrl = input?.logoUrl && isBlobUrl(input.logoUrl) ? input.logoUrl : null
+  if (!Object.values(clean).some(Boolean) && !logoUrl) return { ok: true }
 
   try {
     await upsertUser(user)
     await sql`
-      INSERT INTO business_info (kakao_id, shop_name, phone, instagram, address, hours)
+      INSERT INTO business_info (kakao_id, shop_name, phone, instagram, address, hours, logo_url)
       VALUES (${user.id}, ${clean.shopName}, ${clean.phone}, ${clean.instagram},
-              ${clean.address}, ${clean.hours})
+              ${clean.address}, ${clean.hours}, ${logoUrl})
       ON CONFLICT (kakao_id) DO UPDATE SET
+        logo_url  = COALESCE(EXCLUDED.logo_url, business_info.logo_url),
         shop_name = COALESCE(NULLIF(EXCLUDED.shop_name, ''), business_info.shop_name),
         phone     = COALESCE(NULLIF(EXCLUDED.phone, ''),     business_info.phone),
         instagram = COALESCE(NULLIF(EXCLUDED.instagram, ''), business_info.instagram),
@@ -103,6 +113,34 @@ export async function rememberBusinessInfo(
     console.error("가게 정보 기억하기 실패", error)
     return { ok: false }
   }
+}
+
+/** 내 정보 페이지: 로고 저장(주소) 또는 지우기(null) */
+export async function saveMyLogo(url: string | null): Promise<{ ok: boolean }> {
+  const user = await currentUser()
+  if (!user) return { ok: false }
+  if (url !== null && !isBlobUrl(url)) return { ok: false }
+  try {
+    await upsertUser(user)
+    await sql`
+      INSERT INTO business_info (kakao_id, logo_url) VALUES (${user.id}, ${url})
+      ON CONFLICT (kakao_id) DO UPDATE SET logo_url = EXCLUDED.logo_url, updated_at = now()`
+    return { ok: true }
+  } catch (error) {
+    console.error("로고 저장 실패", error)
+    return { ok: false }
+  }
+}
+
+// ── AI 남은 횟수 (화면 표시용) ─────────────────────────────
+
+/** 화면에 "오늘 남은 AI 횟수"를 보여줄 때. 로그인 안 했으면 null */
+export async function getMyAiQuota(feature: AiFeature) {
+  const quota = await checkAiQuota(feature)
+  if (!quota.ok) {
+    return quota.status === 401 ? null : { used: quota.used ?? 0, limit: quota.limit ?? 0, remaining: 0 }
+  }
+  return { used: quota.used, limit: quota.limit, remaining: quota.remaining }
 }
 
 // ── 찜한 템플릿 ─────────────────────────────

@@ -30,3 +30,16 @@ CREATE TABLE IF NOT EXISTS favorites (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (kakao_id, template_id)
 );
+
+-- AI 사용 기록: 누가, 언제, 무슨 AI 기능을 썼는지 (1인당 횟수 제한에 사용)
+CREATE TABLE IF NOT EXISTS ai_usage (
+  id          BIGSERIAL PRIMARY KEY,
+  kakao_id    TEXT NOT NULL REFERENCES users(kakao_id) ON DELETE CASCADE,
+  feature     TEXT NOT NULL,                 -- 기능 이름 (lib/db/aiUsage.ts 의 AI_LIMITS 참고)
+  detail      TEXT,                          -- 참고용 메모 (예: 템플릿 id) — 선택
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- "이 사람이 오늘 이 기능을 몇 번 썼나"를 빨리 세기 위한 색인
+CREATE INDEX IF NOT EXISTS ai_usage_user_feature_time
+  ON ai_usage (kakao_id, feature, created_at);

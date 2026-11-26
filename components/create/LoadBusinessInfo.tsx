@@ -5,9 +5,11 @@
 //   가게 이름 → 가게 이름 칸
 //   주소      → 장소 칸 (할인/프로모션처럼 그 칸이 '가격'인 템플릿은 제외)
 //   전화·인스타 → 추가 안내 칸
+//   로고      → 브랜드 로고 칸 (로고를 아직 안 골랐고 '로고 없음'이 아닐 때)
 // 자동 저장(기억하기)은 RememberBusinessInfo.tsx 에 있어요.
 import { useState, useTransition } from "react"
 import { getMyBusinessInfo } from "@/lib/db/actions"
+import { rememberUploaded } from "@/lib/upload/uploadImage"
 import type { BusinessInfo } from "@/lib/db/types"
 import styles from "./LoadBusinessInfo.module.css"
 
@@ -17,6 +19,26 @@ type Props = {
   form: Record<FormKey, string>
   updateForm: (key: FormKey, value: string) => void
   placeFieldLabel: string
+  logoPreview: string
+  setLogoPreview: (value: string) => void
+  skipLogo: boolean
+}
+
+// 저장된 로고 주소 → 미리보기용 data URL (편집기·내보내기가 지금처럼 동작하도록)
+async function logoToDataUrl(url: string) {
+  try {
+    const blob = await (await fetch(url)).blob()
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+    rememberUploaded(dataUrl, url) // 이미 올린 로고라서 다시 올리지 않아요
+    return dataUrl
+  } catch {
+    return url
+  }
 }
 
 function contactLine(info: BusinessInfo) {
@@ -27,7 +49,14 @@ function contactLine(info: BusinessInfo) {
   return parts.join(" · ").slice(0, 80)
 }
 
-export default function LoadBusinessInfo({ form, updateForm, placeFieldLabel }: Props) {
+export default function LoadBusinessInfo({
+  form,
+  updateForm,
+  placeFieldLabel,
+  logoPreview,
+  setLogoPreview,
+  skipLogo,
+}: Props) {
   const [message, setMessage] = useState<{ text: string; empty?: boolean } | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -53,6 +82,10 @@ export default function LoadBusinessInfo({ form, updateForm, placeFieldLabel }: 
       if (contact && !form.info.trim()) {
         updateForm("info", contact)
         filled.push("연락처")
+      }
+      if (saved.logoUrl && !logoPreview && !skipLogo) {
+        setLogoPreview(await logoToDataUrl(saved.logoUrl))
+        filled.push("로고")
       }
 
       setMessage({

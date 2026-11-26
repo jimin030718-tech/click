@@ -25,3 +25,18 @@ export const businessInfoLimits: Record<keyof BusinessInfo, number> = {
   address: 60,
   hours: 60,
 }
+
+/** DB에서 불러온 가게 정보 (로고 주소 포함) */
+export type SavedBusinessInfo = BusinessInfo & {
+  logoUrl: string | null // Vercel Blob 에 올린 로고 주소
+}
+
+/** 우리 Vercel Blob 에 올린 주소인지 (다른 사이트 주소는 저장하지 않기) */
+export function isBlobUrl(url: string) {
+  try {
+    const { protocol, hostname } = new URL(url)
+    return protocol === "https:" && hostname.endsWith(".public.blob.vercel-storage.com")
+  } catch {
+    return false
+  }
+}

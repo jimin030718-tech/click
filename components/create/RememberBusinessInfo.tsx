@@ -4,6 +4,7 @@
 // 켜져 있으면(기본 켜짐) 입력을 멈추고 잠시 뒤 내 가게 정보에 자동 저장합니다.
 //   가게 이름 칸 → 가게 이름
 //   추가 안내 칸 속 전화번호(010-…)·인스타(@아이디) → 전화번호·인스타
+//   2단계에서 올린 로고(Blob 업로드가 끝난 것) → 가게 로고
 // 빈 칸은 저장된 값을 지우지 않아요. 끄면 저장하지 않아요. (스위치 상태는 이 브라우저에 기억)
 // 모양은 사진 칸의 "직접 찍은 사진이 없어요" 스위치(globals.css 의 .alternative-check)와 같아요.
 import { useEffect, useRef, useState } from "react"
@@ -14,7 +15,10 @@ import styles from "./LoadBusinessInfo.module.css"
 type Props = {
   brandName: string
   info: string
+  logoUrl: string | null // 올리기가 끝난 로고 주소 (아직이면 null)
 }
+
+type Remembered = Partial<BusinessInfo> & { logoUrl?: string }
 
 const REMEMBER_KEY = "click-remember-business-info"
 const SAVE_DELAY = 1500 // 입력을 멈추고 1.5초 뒤 저장
@@ -30,17 +34,18 @@ const labelOf: Record<string, string> = {
   shopName: "가게 이름",
   phone: "전화번호",
   instagram: "인스타",
+  logoUrl: "로고",
 }
 
-export default function RememberBusinessInfo({ brandName, info }: Props) {
+export default function RememberBusinessInfo({ brandName, info, logoUrl }: Props) {
   const [remember, setRemember] = useState(true)
   const [note, setNote] = useState("")
   const [ready, setReady] = useState(false) // 저장된 가게 정보를 다 읽었는지
 
   // 지금 DB에 있는 값 (같은 값이면 다시 저장하지 않음)
-  const savedRef = useRef<Partial<BusinessInfo>>({})
+  const savedRef = useRef<Remembered>({})
   // 아직 보내지 않은 저장 (화면이 사라질 때 바로 보냄)
-  const pendingRef = useRef<Partial<BusinessInfo> | null>(null)
+  const pendingRef = useRef<Remembered | null>(null)
 
   // 스위치 상태 읽기 + 지금 저장된 가게 정보 미리 읽어 두기
   useEffect(() => {
@@ -49,7 +54,7 @@ export default function RememberBusinessInfo({ brandName, info }: Props) {
     } catch {}
     getMyBusinessInfo()
       .then((saved) => {
-        savedRef.current = saved ?? {}
+        savedRef.current = saved ? { ...saved, logoUrl: saved.logoUrl ?? undefined } : {}
       })
       .catch(() => {})
       .finally(() => setReady(true))
@@ -64,7 +69,7 @@ export default function RememberBusinessInfo({ brandName, info }: Props) {
     } catch {}
   }
 
-  const flush = (changes: Partial<BusinessInfo> | null) => {
+  const flush = (changes: Remembered | null) => {
     pendingRef.current = null
     if (!changes || Object.keys(changes).length === 0) return
     rememberBusinessInfo(changes)
@@ -82,18 +87,16 @@ export default function RememberBusinessInfo({ brandName, info }: Props) {
     pendingRef.current = null
     if (!remember || !ready) return
     const saved = savedRef.current
-    const changes: Partial<BusinessInfo> = {}
-    for (const [key, value] of Object.entries(extractInfo(brandName, info)) as [
-      keyof BusinessInfo,
-      string,
-    ][]) {
+    const changes: Remembered = {}
+    const next: Remembered = { ...extractInfo(brandName, info), logoUrl: logoUrl ?? "" }
+    for (const [key, value] of Object.entries(next) as [keyof Remembered, string][]) {
       if (value && value !== saved[key]) changes[key] = value
     }
     if (Object.keys(changes).length === 0) return
     pendingRef.current = changes
     const timer = window.setTimeout(() => flush(changes), SAVE_DELAY)
     return () => window.clearTimeout(timer)
-  }, [brandName, info, remember, ready])
+  }, [brandName, info, logoUrl, remember, ready])
 
   // 다음 단계로 넘어가 화면이 사라질 때, 아직 안 보낸 저장이 있으면 바로 보내기
   useEffect(() => () => flush(pendingRef.current), [])
