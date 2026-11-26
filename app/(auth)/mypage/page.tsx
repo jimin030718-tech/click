@@ -10,6 +10,7 @@ import LogoutButton from "@/components/auth/LogoutButton"
 import { getMyBusinessInfo } from "@/lib/db/actions"
 import { emptyBusinessInfo } from "@/lib/db/types"
 import BusinessInfoForm from "./BusinessInfoForm"
+import LogoUploader from "./LogoUploader"
 import styles from "./mypage.module.css"
 
 export const metadata: Metadata = {
@@ -57,6 +58,8 @@ export default async function MyPage() {
         <p className={styles.desc}>
           저장해 두면 포스터를 만들 때 &lsquo;내 가게 정보 불러오기&rsquo;로 한 번에 채워져요.
         </p>
+        {/* 로고는 고르는 즉시 저장, 아래 글자 칸은 '저장하기' 버튼으로 저장 */}
+        <LogoUploader initialUrl={businessInfo?.logoUrl ?? null} />
         <BusinessInfoForm initial={businessInfo ?? emptyBusinessInfo} />
       </section>
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type
 import { posterContent, questionsByCategory } from "@/lib/posters"
 import { defaultTextStyle, moodPresets, adjustHexBrightness, type TextElement, type TextObjectStyle } from "@/lib/styles"
 import { PosterArtwork } from "@/components/editor/PosterArtwork"
+import { useImageUploads } from "@/components/create/useImageUploads"
 
 import type { Poster } from "@/lib/posters"
 
@@ -39,6 +40,11 @@ export function useDesignFlow(poster: Poster, onBack: () => void) {
   const [logoPreview, setLogoPreview] = useState("")
   const [useAiImage, setUseAiImage] = useState(false)
   const [skipLogo, setSkipLogo] = useState(false)
+  // (C) 고른 사진·로고를 뒤에서 Blob 에 올려 두기 → AI 기능이 uploads.urlOf(사진) 으로 주소를 씀
+  const uploads = useImageUploads([
+    ...photoPreviews.map((src) => ({ src, folder: "photos" as const })),
+    { src: skipLogo ? "" : logoPreview, folder: "logos" as const },
+  ])
   const [activeField, setActiveField] = useState("TITLE")
   const baseContent = posterContent[poster.type]
   const categoryQuestions = questionsByCategory[poster.category] ?? []
@@ -581,6 +587,7 @@ export function useDesignFlow(poster: Poster, onBack: () => void) {
     photoPreviews,
     setPhotoPreviews,
     logoPreview,
+    uploads,
     setLogoPreview,
     useAiImage,
     setUseAiImage,

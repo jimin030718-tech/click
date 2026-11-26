@@ -6,6 +6,7 @@ import { WorkflowSteps } from "@/components/ui/WorkflowSteps"
 import type { DesignFlowState } from "@/components/create/useDesignFlow"
 import LoadBusinessInfo from "@/components/create/LoadBusinessInfo"
 import RememberBusinessInfo from "@/components/create/RememberBusinessInfo"
+import UploadStatusNote from "@/components/create/UploadStatusNote"
 
 // 2단계: 사진·로고·문구 정보 입력
 // 상태는 useDesignFlow에 있고, 이 함수는 화면만 그립니다.
@@ -41,6 +42,7 @@ export function renderInfoStep(flow: DesignFlowState) {
     goBackStep,
     hasEnteredContent,
     preview,
+    uploads,
   } = flow
 
 
@@ -138,6 +140,7 @@ export function renderInfoStep(flow: DesignFlowState) {
                 />
               ))}
             </div>
+            <UploadStatusNote uploads={uploads} hasPhoto={photoPreviews.some(Boolean)} />
             <label className="alternative-check">
               <input
                 type="checkbox"
@@ -165,6 +168,9 @@ export function renderInfoStep(flow: DesignFlowState) {
               form={form}
               updateForm={updateForm}
               placeFieldLabel={placeFieldLabel}
+              logoPreview={logoPreview}
+              setLogoPreview={setLogoPreview}
+              skipLogo={skipLogo}
             />
             <div className="dynamic-fields">
               <label onFocus={() => setActiveField("EYEBROW")}>
@@ -304,7 +310,11 @@ export function renderInfoStep(flow: DesignFlowState) {
                 </small>
               </label>
             </div>
-            <RememberBusinessInfo brandName={form.brandName} info={form.info} />
+            <RememberBusinessInfo
+              brandName={form.brandName}
+              info={form.info}
+              logoUrl={skipLogo ? null : uploads.urlOf(logoPreview)}
+            />
           </div>
 
           <div className="form-section">

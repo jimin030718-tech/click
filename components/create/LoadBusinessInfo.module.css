@@ -60,3 +60,19 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* 사진 업로드 상태 한 줄 (UploadStatusNote) */
+.uploadNote {
+  margin: 8px 0 0;
+  color: rgba(50, 50, 50, 0.56);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.uploadDone {
+  color: #2e7d4f;
+}
+
+.uploadFail {
+  color: #c03030;
+}
